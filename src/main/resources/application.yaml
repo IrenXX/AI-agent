@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: ai_agent
+  ai:
+    ollama:
+      base-url: http://localhost:11431
+      chat:
+        model: gemma3:4b-it-q4_K_M
+  datasource:
+    url: jdbc:postgresql://localhost:5434/aiagentdb
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: DEBUG
+
+#  autoconfigure:
+#    exclude:
+#      - org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration
+server:
+  port: 8088
