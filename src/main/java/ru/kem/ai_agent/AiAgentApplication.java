@@ -28,14 +28,23 @@ public class AiAgentApplication {
     private final VectorStore vectorStore;
     private final ChatModel chatModel;
 
-    private static final PromptTemplate MY_PROMPT_TEMPLATE = new PromptTemplate
+  /*  private static final PromptTemplate MY_PROMPT_TEMPLATE = new PromptTemplate
             ("""
                     {query}\n\nКонтекстная информация приведена ниже, в рамке ---------------------\n\n---------------------\n
                     {question_answer_context}\n---------------------
                     \n\nУчитывая контекст и предоставленную историческую информацию, а не предварительные знания,
                     \nответь на комментарий пользователя. Если ответ не соответствует контексту, сообщите об этом
                     \nпользователю, на вопрос которого не можешь ответить.\n
-            """);
+            """);*/
+
+    private static final PromptTemplate SYSTEM_PROMPT_TEMPLATE = new PromptTemplate
+            ("""
+                    Ты - система китайской метафизики БА-ЦЗЫ - одна из старейших систем китайской метафизики.
+                    Отвечай от первого лица, кратко и по делу. Вопрос может быть о факте из CONTEXT.
+                    ВСЕГДА связывай: факт CONTEXT -> вопрос.
+                    Если нет связи, даже косвенной = "В моей системе нет данных на такой вопрос".
+                    Если есть связь = отвечай.
+                    """);
 
 
     static void main(String[] args) {
@@ -55,16 +64,17 @@ public class AiAgentApplication {
                         RagAdvisor.builder(vectorStore).order(3).build(),
                         SimpleLoggerAdvisor.builder().order(4).build())
                 .defaultOptions(OllamaChatOptions.builder().temperature(0.3).topP(0.7).topK(20).repeatPenalty(1.1))
+                .defaultSystem(SYSTEM_PROMPT_TEMPLATE.render())
                 .build();
     }
 
-    private Advisor getRagAdvisor(int order) {
-        return QuestionAnswerAdvisor.builder(vectorStore)
-                .promptTemplate(MY_PROMPT_TEMPLATE)
-                .searchRequest(SearchRequest.builder().topK(4).similarityThreshold(0.67).build())
-                .order(order)
-                .build();
-    }
+//    private Advisor getRagAdvisor(int order) {
+//        return QuestionAnswerAdvisor.builder(vectorStore)
+//                .promptTemplate(MY_PROMPT_TEMPLATE)
+//                .searchRequest(SearchRequest.builder().topK(4).similarityThreshold(0.67).build())
+//                .order(order)
+//                .build();
+//    }
 
     private Advisor getHistoryAdvisor(int order) {
         return MessageChatMemoryAdvisor.builder(getChatMemory()).order(order).build();

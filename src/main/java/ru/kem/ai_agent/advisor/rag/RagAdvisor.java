@@ -31,6 +31,9 @@ public class RagAdvisor implements BaseAdvisor {
 
     private final VectorStore vectorStore;
 
+    @Builder.Default
+    private final SearchRequest searchRequest = SearchRequest.builder().topK(3).similarityThreshold(0.6).build();
+
     @Getter
     private final int order;
 
@@ -45,10 +48,14 @@ public class RagAdvisor implements BaseAdvisor {
                 .toString();
 
         List<Document> documents = vectorStore.similaritySearch(
-                SearchRequest.builder().query(queryRag).topK(4).similarityThreshold(0.67).build());
+                SearchRequest.from(searchRequest).query(queryRag).topK(searchRequest.getTopK()*2).build());
+
         if (documents == null || documents.isEmpty()) {
-            return chatClientRequest;
+            return chatClientRequest.mutate().context("Context", "Ничего тут нет :)").build();
         }
+
+        BM25RerankEngine rerankEngine = BM25RerankEngine.builder().build();
+        documents = rerankEngine.rerank(documents, queryRag, searchRequest.getTopK());
 
         String llmContext = documents.stream()
                 .map(Document::getText)
@@ -57,7 +64,12 @@ public class RagAdvisor implements BaseAdvisor {
         String finalUserPrompt = template.render(
                 Map.of("context", llmContext, "question", userQuestion));
 
-        return chatClientRequest.mutate().prompt(chatClientRequest.prompt().augmentSystemMessage(finalUserPrompt)).build();
+        return chatClientRequest.mutate()
+                .prompt(chatClientRequest.prompt().augmentSystemMessage(systemMessage ->
+                        systemMessage.mutate()
+                                .text(systemMessage.getText() + System.lineSeparator() + finalUserPrompt)
+                                .build()))
+                .build();
     }
 
     @Override
