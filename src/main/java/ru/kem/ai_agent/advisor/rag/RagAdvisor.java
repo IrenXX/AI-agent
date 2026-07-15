@@ -54,7 +54,7 @@ public class RagAdvisor implements BaseAdvisor {
             return chatClientRequest.mutate().context("Context", "Ничего тут нет :)").build();
         }
 
-        BM25RerankEngine rerankEngine = BM25RerankEngine.builder().build();
+        RerankEngine rerankEngine = RerankEngine.builder().build();
         documents = rerankEngine.rerank(documents, queryRag, searchRequest.getTopK());
 
         String llmContext = documents.stream()
